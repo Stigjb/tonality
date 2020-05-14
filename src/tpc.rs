@@ -9,6 +9,13 @@ use crate::accidental::Accidental;
 use crate::alteration::Alteration;
 
 /// Tonal pitch class
+///
+/// Has variants for all pitch classes with double or single flats, natural,
+/// double or single sharps.
+///
+/// Note that the "s" and "ss" suffixes mean sharp and double sharp. Should not
+/// be confused with the names of flat notes, which in some languages use the -s
+/// suffix.
 #[derive(Clone, Debug, PartialEq, FromPrimitive, ToPrimitive)]
 #[rustfmt::skip]
 pub enum Tpc {
@@ -20,7 +27,10 @@ pub enum Tpc {
     Fss, Css, Gss, Dss, Ass, Ess, Bss,
 }
 
+/// The highest Tpc
 pub const MAX: Tpc = Tpc::Bss;
+
+/// The lowest Tpc
 pub const MIN: Tpc = Tpc::Fbb;
 
 impl Tpc {
@@ -36,14 +46,29 @@ impl Tpc {
         }
     }
 
-    /// 
-    pub fn to_alter_with_key(&self, key: Key) -> Alteration {
+    /// The number of semitones by which the tpc is altered with respect to the key
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use tonality::{Accidental, Key, Step, Tpc};
+    /// // C natural is not altered in the key of A flat
+    /// assert_eq!(0, Tpc::C.alteration(Key::Ab));
+    /// // A major has C sharp, so a C natural is one semitone flat
+    /// assert_eq!(-1, Tpc::C.alteration(Key::A));
+    /// // Db major has A flat, so an A sharp is two semitones sharp
+    /// assert_eq!(2, Tpc::As.alteration(Key::Db));
+    /// ```
+    pub fn alteration(&self, key: Key) -> Alteration {
         let tpc = self.clone() as isize;
         let key = key.clone() as isize;
         (tpc - key - MIN as isize + key::MAX as isize) / DELTA_SEMITONE - 3
     }
 
-    pub fn to_accidental(&self) -> Accidental {
+    /// The accidental for the Tpc
+    ///
+    /// Private because you rarely want an accidental without the context of a key.
+    fn accidental(&self) -> Accidental {
         match (self.clone() as isize + 1) / 7 {
             0 => Accidental::DblFlat,
             1 => Accidental::Flat,
@@ -52,11 +77,35 @@ impl Tpc {
             4 => Accidental::DblSharp,
             _ => unreachable!()
         }
-
     }
 
-    fn to_altered_step(&self) -> (Accidental, Step) {
-        todo!()
+    /// Find the appropriate accidental for the Tpc in a key.
+    ///
+    /// If no key is given, default to C major with no fixed accidentals
+    ///
+    /// # Example
+    /// 
+    /// ```
+    /// # use tonality::{Accidental, Key, Step, Tpc};
+    /// let tpc = Tpc::C;
+    /// let key: Option<Key> = None;
+    /// assert_eq!((Step::C, None), tpc.altered_step(key));
+    /// 
+    /// let key: Option<Key> = Some(Key::A);
+    /// assert_eq!((Step::C, Some(Accidental::Natural)), tpc.altered_step(key));
+    /// 
+    /// let tpc = Tpc::Fss;
+    /// let key: Option<Key> = None;
+    /// assert_eq!((Step::F, Some(Accidental::DblSharp)), tpc.altered_step(key));
+    /// ```
+    pub fn altered_step(&self, key: Option<Key>) -> (Step, Option<Accidental>) {
+        let key = key.unwrap_or_default();
+        let step = self.to_step();
+        if step.with_key(&key) == self {
+            (step, None)
+        } else {
+            (step, Some(self.accidental()))
+        }
     }
 }
 
@@ -66,14 +115,10 @@ const DELTA_SEMITONE: isize = 7;
 const DELTA_ENHARMONIC: isize = 12;
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Prefer {
+enum Prefer {
     Flats,
     Nearest,
     Sharps,
-}
-
-pub fn pitch_to_tpc(pitch: isize, key: &Key, prefer: &Prefer) -> Tpc {
-    todo!()
 }
 
 #[cfg(test)]
@@ -92,32 +137,32 @@ mod tests {
     #[test]
     fn test_to_alter_with_key() {
         // A in C Maj: No alteration
-        assert_eq!(0, Tpc::A.to_alter_with_key(Key::C));
+        assert_eq!(0, Tpc::A.alteration(Key::C));
 
         // F# in C Maj: One semitone higher
-        assert_eq!(1, Tpc::Fs.to_alter_with_key(Key::C));
+        assert_eq!(1, Tpc::Fs.alteration(Key::C));
 
         // C in D Maj: One semitone lower
-        assert_eq!(-1, Tpc::C.to_alter_with_key(Key::D));
+        assert_eq!(-1, Tpc::C.alteration(Key::D));
 
         // Fbb in C# Maj: Three semitones lower
-        assert_eq!(-3, Tpc::Fbb.to_alter_with_key(Key::Cs));
+        assert_eq!(-3, Tpc::Fbb.alteration(Key::Cs));
 
         // Eb in Bb Maj: No alteration
-        assert_eq!(0, Tpc::Eb.to_alter_with_key(Key::Bb));
+        assert_eq!(0, Tpc::Eb.alteration(Key::Bb));
     }
 
     #[test]
     fn test_to_accidental() {
-        assert_eq!(Accidental::DblFlat, Tpc::Fbb.to_accidental());
-        assert_eq!(Accidental::DblFlat, Tpc::Bbb.to_accidental());
-        assert_eq!(Accidental::Flat, Tpc::Cb.to_accidental());
-        assert_eq!(Accidental::Flat, Tpc::Eb.to_accidental());
-        assert_eq!(Accidental::Natural, Tpc::G.to_accidental());
-        assert_eq!(Accidental::Natural, Tpc::A.to_accidental());
-        assert_eq!(Accidental::Sharp, Tpc::Cs.to_accidental());
-        assert_eq!(Accidental::Sharp, Tpc::Es.to_accidental());
-        assert_eq!(Accidental::DblSharp, Tpc::Fss.to_accidental());
-        assert_eq!(Accidental::DblSharp, Tpc::Bss.to_accidental());
+        assert_eq!(Accidental::DblFlat, Tpc::Fbb.accidental());
+        assert_eq!(Accidental::DblFlat, Tpc::Bbb.accidental());
+        assert_eq!(Accidental::Flat, Tpc::Cb.accidental());
+        assert_eq!(Accidental::Flat, Tpc::Eb.accidental());
+        assert_eq!(Accidental::Natural, Tpc::G.accidental());
+        assert_eq!(Accidental::Natural, Tpc::A.accidental());
+        assert_eq!(Accidental::Sharp, Tpc::Cs.accidental());
+        assert_eq!(Accidental::Sharp, Tpc::Es.accidental());
+        assert_eq!(Accidental::DblSharp, Tpc::Fss.accidental());
+        assert_eq!(Accidental::DblSharp, Tpc::Bss.accidental());
     }
 }

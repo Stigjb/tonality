@@ -1,6 +1,7 @@
 //! Key signatures
 use num_derive::{FromPrimitive, ToPrimitive};
 
+/// Key signatures. Named after their major key.
 #[derive(Clone, Debug, PartialEq, FromPrimitive, ToPrimitive)]
 pub enum Key {
     Cb = -7,

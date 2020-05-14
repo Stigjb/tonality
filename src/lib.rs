@@ -18,3 +18,5 @@ pub mod pitch;
 pub mod step;
 #[doc(inline)]
 pub mod tpc;
+
+pub use {accidental::Accidental, key::Key, step::Step, tpc::Tpc};
