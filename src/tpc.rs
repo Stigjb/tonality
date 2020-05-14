@@ -74,8 +74,7 @@ impl Tpc {
             1 => Accidental::Flat,
             2 => Accidental::Natural,
             3 => Accidental::Sharp,
-            4 => Accidental::DblSharp,
-            _ => unreachable!()
+            _ => Accidental::DblSharp,
         }
     }
 
