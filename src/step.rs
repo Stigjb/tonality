@@ -1,4 +1,5 @@
 //! A step of a diatonic scale
+use std::ops::{Add, Sub};
 
 use num_derive::{FromPrimitive, ToPrimitive};
 
@@ -72,6 +73,25 @@ impl Step {
         ];
         let key = key.clone() as isize - key::MIN as isize;
         &BY_STEP_AND_KEY[7 * key as usize + self.clone() as usize]
+    }
+}
+
+impl Add<isize> for Step {
+    type Output = Step;
+
+    fn add(self, rhs: isize) -> Self::Output {
+        use num_traits::FromPrimitive;
+
+        let new_step = (self as isize + rhs).rem_euclid(7);
+        FromPrimitive::from_isize(new_step).unwrap()
+    }
+}
+
+impl Sub<isize> for Step {
+    type Output = Step;
+
+    fn sub(self, rhs: isize) -> Self::Output {
+        self.add(-rhs)
     }
 }
 

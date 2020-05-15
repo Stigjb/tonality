@@ -34,7 +34,7 @@ pub const MAX: Tpc = Tpc::Bss;
 pub const MIN: Tpc = Tpc::Fbb;
 
 impl Tpc {
-    fn to_step(&self) -> Step {
+    fn step(&self) -> Step {
         match self {
             Tpc::Bbb | Tpc::Bb | Tpc::B | Tpc::Bs | Tpc::Bss => Step::B,
             Tpc::Fbb | Tpc::Fb | Tpc::F | Tpc::Fs | Tpc::Fss => Step::F,
@@ -99,12 +99,21 @@ impl Tpc {
     /// ```
     pub fn altered_step(&self, key: Option<Key>) -> (Step, Option<Accidental>) {
         let key = key.unwrap_or_default();
-        let step = self.to_step();
+        let step = self.step();
         if step.with_key(&key) == self {
             (step, None)
         } else {
             (step, Some(self.accidental()))
         }
+    }
+
+    /// Adjust alteration while maintaining the step value
+    ///
+    /// Returns None if the alteration would be sharper than double sharp or
+    /// flatter than double flat
+    pub fn alter(&self, by: Alteration) -> Option<Tpc> {
+        let new = self.clone() as isize + by * DELTA_SEMITONE;
+        num_traits::FromPrimitive::from_isize(new)
     }
 }
 
@@ -163,5 +172,20 @@ mod tests {
         assert_eq!(Accidental::Sharp, Tpc::Es.accidental());
         assert_eq!(Accidental::DblSharp, Tpc::Fss.accidental());
         assert_eq!(Accidental::DblSharp, Tpc::Bss.accidental());
+    }
+
+    fn property_alter_keeps_step(tpc: &Tpc, alter: Alteration) {
+        if let Some(altered) = tpc.alter(alter) {
+            assert_eq!(tpc.step(), altered.step())
+        }
+    }
+
+    #[test]
+    fn test_alter_property() {
+        for tpc in vec![Tpc::C, Tpc::Ab, Tpc::E, Tpc::Fss, Tpc::Gb] {
+            for alter in vec![0, 1, 2, -3, -2] {
+                property_alter_keeps_step(&tpc, alter)
+            }
+        }
     }
 }
