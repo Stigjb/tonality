@@ -1,7 +1,9 @@
 [package]
 authors = ["Stig Johan Berggren <stigjb@gmail.com>"]
 description = "Pitch classes for scoring music"
+documentation = "https://docs.rs/tonality"
 edition = "2018"
+homepage = "https://github.com/stigjb/tonality"
 keywords = ["music", "music-theory", "pitch", "scoring"]
 license = "MIT OR Apache-2.0"
 name = "tonality"
