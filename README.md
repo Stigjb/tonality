@@ -1,5 +1,9 @@
 # Tonality
 
+[![crate](https://img.shields.io/crates/v/tonality.svg)](https://crates.io/crates/tonality)
+[![documentation](https://docs.rs/tonality/badge.svg)](https://docs.rs/tonality)
+[![build](https://github.com/Stigjb/tonality/workflows/Build/badge.svg?branch=master)](https://github.com/stigjb/tonality/actions)
+
 A library for handling tonal pitch classes, keys, accidentals and
 alterations.
 
