@@ -34,7 +34,8 @@ pub const MAX: Tpc = Tpc::Bss;
 pub const MIN: Tpc = Tpc::Fbb;
 
 impl Tpc {
-    fn step(&self) -> Step {
+    /// The basic step of the Tpc, or where it is placed on the staff
+    pub fn step(&self) -> Step {
         match self {
             Tpc::Bbb | Tpc::Bb | Tpc::B | Tpc::Bs | Tpc::Bss => Step::B,
             Tpc::Fbb | Tpc::Fb | Tpc::F | Tpc::Fs | Tpc::Fss => Step::F,
