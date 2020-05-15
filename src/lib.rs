@@ -23,9 +23,8 @@
 //! let dom7: Chord = vec![(0, 0), (2, 0), (4, 0), (6, -1)];
 //! let tpcs: Vec<Tpc> = dom7
 //!     .iter()
-//!     .map(|&(scale_deg, alter)| key.scale_degree(scale_deg).alter(alter))
-//!     .collect::<Option<_>>()
-//!     .unwrap();
+//!     .filter_map(|&(scale_deg, alter)| key.scale_degree(scale_deg).alter(alter))
+//!     .collect();
 //! let expected = vec![Tpc::Fs, Tpc::As, Tpc::Cs, Tpc::E];
 //! assert_eq!(expected, tpcs);
 //! ```
