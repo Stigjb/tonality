@@ -27,7 +27,7 @@
 //! };
 //! let tpcs: Vec<Tpc> = dom7
 //!     .iter()
-//!     .filter_map(|interval| root.clone() + interval)
+//!     .filter_map(|&interval| root + interval)
 //!     .collect();
 //! let expected = vec![Tpc::Fs, Tpc::As, Tpc::Cs, Tpc::E];
 //! assert_eq!(expected, tpcs);

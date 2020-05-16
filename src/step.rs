@@ -1,13 +1,15 @@
 //! A step of a diatonic scale
+use std::convert::TryFrom;
 use std::ops::{Add, Sub};
 
-use num_derive::{FromPrimitive, ToPrimitive};
+use num_derive::FromPrimitive;
 
 use crate::Accidental;
 use crate::Key;
 use crate::Tpc;
 
-#[derive(Clone, Debug, PartialEq, FromPrimitive, ToPrimitive)]
+#[derive(Clone, Copy, Debug, PartialEq, FromPrimitive)]
+#[must_use]
 pub enum Step {
     C = 0,
     D,
@@ -18,8 +20,8 @@ pub enum Step {
     B,
 }
 
-impl From<&Tpc> for Step {
-    fn from(tpc: &Tpc) -> Self {
+impl From<Tpc> for Step {
+    fn from(tpc: Tpc) -> Self {
         match tpc {
             Tpc::Bbb | Tpc::Bb | Tpc::B | Tpc::Bs | Tpc::Bss => Step::B,
             Tpc::Fbb | Tpc::Fb | Tpc::F | Tpc::Fs | Tpc::Fss => Step::F,
@@ -34,7 +36,7 @@ impl From<&Tpc> for Step {
 
 impl Step {
     /// The tonal pitch class resulting from applying an accidental to the step
-    pub fn with_accidental(&self, alter: &Accidental) -> &'static Tpc {
+    pub fn with_accidental(self, alter: Accidental) -> Tpc {
         #[rustfmt::skip]
         const SPELLINGS: [Tpc; 35] = [
             Tpc::Cbb, Tpc::Cb, Tpc::C, Tpc::Cs, Tpc::Css,
@@ -45,14 +47,14 @@ impl Step {
             Tpc::Abb, Tpc::Ab, Tpc::A, Tpc::As, Tpc::Ass,
             Tpc::Bbb, Tpc::Bb, Tpc::B, Tpc::Bs, Tpc::Bss,
         ];
-        let step = self.clone() as isize;
-        let alter = alter.clone() as isize;
+        let step = self as i8;
+        let alter = alter as i8;
         let i = step * 5 + alter + 2;
-        &SPELLINGS[i as usize]
+        SPELLINGS[usize::try_from(i).unwrap()]
     }
 
     /// The tonal pitch class of the step in the given key
-    pub fn with_key(&self, key: &Key) -> Tpc {
+    pub fn with_key(self, key: Key) -> Tpc {
         #[rustfmt::skip]
         const BY_STEP_AND_KEY: [Tpc; 7 * Key::NUM_OF as usize] = [
             Tpc::Cb, Tpc::Db, Tpc::Eb, Tpc::Fb, Tpc::Gb, Tpc::Ab, Tpc::Bb, // Cb
@@ -71,8 +73,8 @@ impl Step {
             Tpc::Cs, Tpc::Ds, Tpc::Es, Tpc::Fs, Tpc::Gs, Tpc::As, Tpc::B,  // F#
             Tpc::Cs, Tpc::Ds, Tpc::Es, Tpc::Fs, Tpc::Gs, Tpc::As, Tpc::Bs, // C#
         ];
-        let key = key.clone() as isize - Key::MIN as isize;
-        BY_STEP_AND_KEY[7 * key as usize + self.clone() as usize].clone()
+        let key = usize::try_from(key as i8 - Key::MIN as i8).unwrap();
+        BY_STEP_AND_KEY[7 * key + self as usize]
     }
 }
 
@@ -101,20 +103,20 @@ mod tests {
 
     #[test]
     fn test_step_to_tpc() {
-        assert_eq!(Step::C.with_accidental(&Accidental::Natural), &Tpc::C);
-        assert_eq!(Step::F.with_accidental(&Accidental::Sharp), &Tpc::Fs);
-        assert_eq!(Step::A.with_accidental(&Accidental::Flat), &Tpc::Ab);
-        assert_eq!(Step::E.with_accidental(&Accidental::DblFlat), &Tpc::Ebb);
-        assert_eq!(Step::B.with_accidental(&Accidental::Sharp), &Tpc::Bs);
+        assert_eq!(Step::C.with_accidental(Accidental::Natural), Tpc::C);
+        assert_eq!(Step::F.with_accidental(Accidental::Sharp), Tpc::Fs);
+        assert_eq!(Step::A.with_accidental(Accidental::Flat), Tpc::Ab);
+        assert_eq!(Step::E.with_accidental(Accidental::DblFlat), Tpc::Ebb);
+        assert_eq!(Step::B.with_accidental(Accidental::Sharp), Tpc::Bs);
     }
 
     #[test]
     fn test_with_key() {
-        assert_eq!(Tpc::C, Step::C.with_key(&Key::C));
-        assert_eq!(Tpc::Cs, Step::C.with_key(&Key::D));
-        assert_eq!(Tpc::B, Step::B.with_key(&Key::Fs));
-        assert_eq!(Tpc::Bb, Step::B.with_key(&Key::Ab));
-        assert_eq!(Tpc::G, Step::G.with_key(&Key::D));
-        assert_eq!(Tpc::E, Step::E.with_key(&Key::F));
+        assert_eq!(Tpc::C, Step::C.with_key(Key::C));
+        assert_eq!(Tpc::Cs, Step::C.with_key(Key::D));
+        assert_eq!(Tpc::B, Step::B.with_key(Key::Fs));
+        assert_eq!(Tpc::Bb, Step::B.with_key(Key::Ab));
+        assert_eq!(Tpc::G, Step::G.with_key(Key::D));
+        assert_eq!(Tpc::E, Step::E.with_key(Key::F));
     }
 }

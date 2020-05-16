@@ -1,6 +1,6 @@
-use num_derive::{FromPrimitive, ToPrimitive};
+use num_derive::FromPrimitive;
 
-#[derive(Clone, Debug, PartialEq, FromPrimitive, ToPrimitive)]
+#[derive(Clone, Copy, Debug, PartialEq, FromPrimitive)]
 pub enum Interval {
     Dim2 = -12,
     Dim6,

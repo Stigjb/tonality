@@ -1,7 +1,5 @@
 //! Tonal pitch classes
-use std::borrow::Borrow;
-
-use num_derive::{FromPrimitive, ToPrimitive};
+use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
 use crate::{Accidental, Alteration, Interval, Key, Step};
@@ -16,7 +14,8 @@ use crate::{Accidental, Alteration, Interval, Key, Step};
 /// Note that the "s" and "ss" suffixes mean sharp and double sharp. Should not
 /// be confused with the names of flat notes, which in some languages use the -s
 /// suffix.
-#[derive(Clone, Debug, PartialEq, FromPrimitive, ToPrimitive)]
+#[derive(Clone, Copy, PartialOrd, Ord, Eq, Debug, PartialEq, FromPrimitive)]
+#[must_use]
 #[rustfmt::skip]
 pub enum Tpc {
     Fbb = -15,
@@ -35,14 +34,14 @@ impl Tpc {
     pub const MIN: Tpc = Tpc::Fbb;
 
     /// Number of fifths to add to be a semitone higher
-    const DELTA_SEMITONE: isize = 7;
+    const DELTA_SEMITONE: i8 = 7;
 
     /// Number of fifths to the next enharmonic spelling
-    const DELTA_ENHARMONIC: isize = 12;
+    const DELTA_ENHARMONIC: i8 = 12;
 
     /// The basic step of the Tpc, or where it is placed on the staff
-    pub fn step(&self) -> Step {
-        match (self.clone() as i8).rem_euclid(7) {
+    pub fn step(self) -> Step {
+        match (self as i8).rem_euclid(7) {
             0 => Step::C,
             1 => Step::G,
             2 => Step::D,
@@ -66,17 +65,18 @@ impl Tpc {
     /// // Db major has A flat, so an A sharp is two semitones sharp
     /// assert_eq!(2, Tpc::As.alteration(Key::Db));
     /// ```
-    pub fn alteration(&self, key: Key) -> Alteration {
-        let tpc = self.clone() as isize;
-        let key = key.clone() as isize;
-        (tpc - key - Self::MIN as isize + Key::MAX as isize) / Self::DELTA_SEMITONE - 3
+    #[must_use]
+    pub fn alteration(self, key: Key) -> Alteration {
+        let tpc = self as i8;
+        let key = key as i8;
+        (tpc - key - Self::MIN as i8 + Key::MAX as i8) / Self::DELTA_SEMITONE - 3
     }
 
     /// The accidental for the Tpc
     ///
     /// Private because you rarely want an accidental without the context of a key.
-    fn accidental(&self) -> Accidental {
-        match (self.clone() as i8 + 1).div_euclid(7) {
+    fn accidental(self) -> Accidental {
+        match (self as i8 + 1).div_euclid(7) {
             -2 => Accidental::DblFlat,
             -1 => Accidental::Flat,
             0 => Accidental::Natural,
@@ -105,10 +105,10 @@ impl Tpc {
     /// let key: Option<Key> = None;
     /// assert_eq!((Step::F, Some(Accidental::DblSharp)), tpc.altered_step(key));
     /// ```
-    pub fn altered_step(&self, key: Option<Key>) -> (Step, Option<Accidental>) {
+    pub fn altered_step(self, key: Option<Key>) -> (Step, Option<Accidental>) {
         let key = key.unwrap_or_default();
         let step = self.step();
-        if &step.with_key(&key) == self {
+        if step.with_key(key) == self {
             (step, None)
         } else {
             (step, Some(self.accidental()))
@@ -119,27 +119,27 @@ impl Tpc {
     ///
     /// Returns None if the alteration would be sharper than double sharp or
     /// flatter than double flat
-    pub fn alter(&self, by: Alteration) -> Option<Tpc> {
-        let new = self.clone() as isize + by * Self::DELTA_SEMITONE;
-        num_traits::FromPrimitive::from_isize(new)
+    #[must_use]
+    pub fn alter(self, by: Alteration) -> Option<Tpc> {
+        let new = self as i8 + by * Self::DELTA_SEMITONE;
+        num_traits::FromPrimitive::from_i8(new)
     }
 }
 
-
-impl<Rhs> std::ops::Add<Rhs> for Tpc where Rhs: Borrow<Interval> {
+impl std::ops::Add<Interval> for Tpc {
     type Output = Option<Tpc>;
 
-    fn add(self, rhs: Rhs) -> Self::Output {
-        let value = self as i8 + rhs.borrow().clone() as i8;
+    fn add(self, rhs: Interval) -> Self::Output {
+        let value = self as i8 + rhs as i8;
         FromPrimitive::from_i8(value)
     }
 }
 
-impl<Rhs> std::ops::Sub<Rhs> for Tpc where Rhs: Borrow<Interval> {
+impl std::ops::Sub<Interval> for Tpc {
     type Output = Option<Tpc>;
 
-    fn sub(self, rhs: Rhs) -> Self::Output {
-        let value = self as i8 - rhs.borrow().clone() as i8;
+    fn sub(self, rhs: Interval) -> Self::Output {
+        let value = self as i8 - rhs as i8;
         FromPrimitive::from_i8(value)
     }
 }
@@ -150,10 +150,9 @@ mod tests {
 
     #[test]
     fn test_enharmonic_transpose() {
-        use num_traits::ToPrimitive;
         let c = Tpc::C;
-        let enharmonic = c.to_isize().unwrap() + Tpc::DELTA_ENHARMONIC;
-        let enharmonic: Tpc = num_traits::FromPrimitive::from_isize(enharmonic).unwrap();
+        let enharmonic = c as i8 + Tpc::DELTA_ENHARMONIC;
+        let enharmonic: Tpc = num_traits::FromPrimitive::from_i8(enharmonic).unwrap();
         assert_eq!(enharmonic, Tpc::Bs);
     }
 
@@ -185,7 +184,7 @@ mod tests {
         assert_eq!(Accidental::DblSharp, Tpc::Bss.accidental());
     }
 
-    fn property_alter_keeps_step(tpc: &Tpc, alter: Alteration) {
+    fn property_alter_keeps_step(tpc: Tpc, alter: Alteration) {
         if let Some(altered) = tpc.alter(alter) {
             assert_eq!(tpc.step(), altered.step())
         }
@@ -195,7 +194,7 @@ mod tests {
     fn test_alter_property() {
         for tpc in vec![Tpc::C, Tpc::Ab, Tpc::E, Tpc::Fss, Tpc::Gb] {
             for alter in vec![0, 1, 2, -3, -2] {
-                property_alter_keeps_step(&tpc, alter)
+                property_alter_keeps_step(tpc, alter)
             }
         }
     }

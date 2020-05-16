@@ -1,12 +1,13 @@
 //! Key signatures
-use num_derive::{FromPrimitive, ToPrimitive};
+use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
 use crate::Step;
 use crate::Tpc;
 
 /// Key signatures. Named after their major key.
-#[derive(Clone, Debug, PartialEq, FromPrimitive, ToPrimitive)]
+#[derive(Clone, Copy, Debug, PartialEq, FromPrimitive)]
+#[must_use]
 pub enum Key {
     Cb = -7,
     Gb,
@@ -42,12 +43,11 @@ impl Key {
     pub const NUM_OF: isize = Self::MAX as isize - Self::MIN as isize + 1;
 
     /// Steps along the line of fifths to end up at an enharmonic key.
-    /// Key::Gb as isize + DELTA_ENHARMONIC = Fs as isize
     pub const DELTA_ENHARMONIC: isize = 12;
 
     /// The root of the key's major scale
-    fn root_step(&self) -> Step {
-        match (self.clone() as i8).rem_euclid(7) {
+    fn root_step(self) -> Step {
+        match (self as i8).rem_euclid(7) {
             0 => Step::C,
             1 => Step::G,
             2 => Step::D,
@@ -59,15 +59,15 @@ impl Key {
     }
 
     /// The root of this key's major scale
-    pub fn root(&self) -> Tpc {
-        FromPrimitive::from_i8(self.clone() as i8).unwrap()
+    pub fn root(self) -> Tpc {
+        FromPrimitive::from_i8(self as i8).unwrap()
     }
 
     /// Zero-indexed scale degrees: 0 is root, 4 is fifth
-    pub fn scale_degree(&self, degree: isize) -> Tpc {
+    pub fn scale_degree(self, degree: isize) -> Tpc {
         /// Each scale degree's distance from the root, in fifths
         const OFFSETS: [i8; 7] = [0, 2, 4, -1, 1, 3, 5];
-        let value = self.clone() as i8 + OFFSETS[degree.rem_euclid(7) as usize];
+        let value = self as i8 + OFFSETS[degree.rem_euclid(7) as usize];
         FromPrimitive::from_i8(value).unwrap()
     }
 }
