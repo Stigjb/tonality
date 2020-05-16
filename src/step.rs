@@ -3,9 +3,9 @@ use std::ops::{Add, Sub};
 
 use num_derive::{FromPrimitive, ToPrimitive};
 
-use crate::accidental::Accidental;
-use crate::tpc::Tpc;
-use crate::key;
+use crate::Accidental;
+use crate::Key;
+use crate::Tpc;
 
 #[derive(Clone, Debug, PartialEq, FromPrimitive, ToPrimitive)]
 pub enum Step {
@@ -52,9 +52,9 @@ impl Step {
     }
 
     /// The tonal pitch class of the step in the given key
-    pub fn with_key(&self, key: &key::Key) -> &'static Tpc {
+    pub fn with_key(&self, key: &Key) -> Tpc {
         #[rustfmt::skip]
-        const BY_STEP_AND_KEY: [Tpc; 7 * key::NUM_OF as usize] = [
+        const BY_STEP_AND_KEY: [Tpc; 7 * Key::NUM_OF as usize] = [
             Tpc::Cb, Tpc::Db, Tpc::Eb, Tpc::Fb, Tpc::Gb, Tpc::Ab, Tpc::Bb, // Cb
             Tpc::Cb, Tpc::Db, Tpc::Eb, Tpc::F,  Tpc::Gb, Tpc::Ab, Tpc::Bb, // Gb
             Tpc::C,  Tpc::Db, Tpc::Eb, Tpc::F,  Tpc::Gb, Tpc::Ab, Tpc::Bb, // Db
@@ -71,8 +71,8 @@ impl Step {
             Tpc::Cs, Tpc::Ds, Tpc::Es, Tpc::Fs, Tpc::Gs, Tpc::As, Tpc::B,  // F#
             Tpc::Cs, Tpc::Ds, Tpc::Es, Tpc::Fs, Tpc::Gs, Tpc::As, Tpc::Bs, // C#
         ];
-        let key = key.clone() as isize - key::MIN as isize;
-        &BY_STEP_AND_KEY[7 * key as usize + self.clone() as usize]
+        let key = key.clone() as isize - Key::MIN as isize;
+        BY_STEP_AND_KEY[7 * key as usize + self.clone() as usize].clone()
     }
 }
 
@@ -110,13 +110,11 @@ mod tests {
 
     #[test]
     fn test_with_key() {
-        use key::Key;
-
-        assert_eq!(&Tpc::C, Step::C.with_key(&Key::C));
-        assert_eq!(&Tpc::Cs, Step::C.with_key(&Key::D));
-        assert_eq!(&Tpc::B, Step::B.with_key(&Key::Fs));
-        assert_eq!(&Tpc::Bb, Step::B.with_key(&Key::Ab));
-        assert_eq!(&Tpc::G, Step::G.with_key(&Key::D));
-        assert_eq!(&Tpc::E, Step::E.with_key(&Key::F));
+        assert_eq!(Tpc::C, Step::C.with_key(&Key::C));
+        assert_eq!(Tpc::Cs, Step::C.with_key(&Key::D));
+        assert_eq!(Tpc::B, Step::B.with_key(&Key::Fs));
+        assert_eq!(Tpc::Bb, Step::B.with_key(&Key::Ab));
+        assert_eq!(Tpc::G, Step::G.with_key(&Key::D));
+        assert_eq!(Tpc::E, Step::E.with_key(&Key::F));
     }
 }

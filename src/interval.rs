@@ -1,0 +1,30 @@
+use num_derive::{FromPrimitive, ToPrimitive};
+
+#[derive(Clone, Debug, PartialEq, FromPrimitive, ToPrimitive)]
+pub enum Interval {
+    Dim2 = -12,
+    Dim6,
+    Dim3,
+    Dim7,
+    Dim4,
+    Dim1,
+    Dim5,
+    Min2,
+    Min6,
+    Min3,
+    Min7,
+    P4,
+    Unison,
+    P5,
+    Maj2,
+    Maj6,
+    Maj3,
+    Maj7,
+    Aug4,
+    Aug1,
+    Aug5,
+    Aug2,
+    Aug6,
+    Aug3,
+    Aug7,
+}

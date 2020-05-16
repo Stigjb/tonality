@@ -1,7 +1,8 @@
 #![warn(clippy::pedantic)]
 #![allow(dead_code)]
 
-//! Types and operations that are useful for dealing with musical notation.
+//! Types and operations that are useful for dealing with tonal pitch classes, which is
+//! useful for music theory or musical notation.
 //!
 //! This library will help you answer questions like "Which accidental, if any,
 //! is used for writing the pitch A flat in the key of B flat major?"
@@ -18,12 +19,15 @@
 //!
 //! ```
 //! # use tonality::*;
-//! let key = Key::Fs;
-//! type Chord = Vec<(isize, Alteration)>;
-//! let dom7: Chord = vec![(0, 0), (2, 0), (4, 0), (6, -1)];
+//! let root = Tpc::Fs;
+//! type Chord = Vec<Interval>;
+//! let dom7: Chord = {
+//!     use Interval::*;
+//!     vec![Unison, Maj3, P5, Min7]
+//! };
 //! let tpcs: Vec<Tpc> = dom7
 //!     .iter()
-//!     .filter_map(|&(scale_deg, alter)| key.scale_degree(scale_deg).alter(alter))
+//!     .filter_map(|interval| root.clone() + interval)
 //!     .collect();
 //! let expected = vec![Tpc::Fs, Tpc::As, Tpc::Cs, Tpc::E];
 //! assert_eq!(expected, tpcs);
@@ -34,12 +38,15 @@ pub mod accidental;
 #[doc(inline)]
 pub mod alteration;
 #[doc(inline)]
-pub mod key;
+pub mod interval;
 #[doc(inline)]
-pub mod pitch;
+pub mod key;
 #[doc(inline)]
 pub mod step;
 #[doc(inline)]
 pub mod tpc;
 
-pub use {accidental::Accidental, alteration::Alteration, key::Key, step::Step, tpc::Tpc};
+pub use {
+    accidental::Accidental, alteration::Alteration, interval::Interval, key::Key, step::Step,
+    tpc::Tpc,
+};

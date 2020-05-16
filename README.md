@@ -13,17 +13,17 @@ You can find the tonal pitch classes of the notes in a chord by specifying
 the chord as a collection of (scale degree, alteration) pairs.
 
 ```rust
-use tonality::{Alteration, Key, Tpc};
+use tonality::{Tpc, Interval};
 
-type Chord = Vec<(isize, Alteration)>;
+type Chord = Vec<Interval>;
 
 // The seventh in a dominant seventh chord is altered one semitone flat relative
 // to the major scale
-let dom7: Chord = vec![(0, 0), (2, 0), (4, 0), (6, -1)];
-let key = Key::Fs;
+let dom7: Chord = vec![Interval::Unison, Interval::Maj3, Interval::P5, Interval::Min7];
+let root = Tpc::Fs;
 let chord_tones: Vec<Tpc> = dom7
     .iter()
-    .filter_map(|&(scale_deg, alter)| key.scale_degree(scale_deg).alter(alter))
+    .filter_map(|&interval| root + interval)
     .collect();
 
 let expected = vec![Tpc::Fs, Tpc::As, Tpc::Cs, Tpc::E];

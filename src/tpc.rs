@@ -1,17 +1,17 @@
 //! Tonal pitch classes
+use std::borrow::Borrow;
 
 use num_derive::{FromPrimitive, ToPrimitive};
+use num_traits::FromPrimitive;
 
-use crate::key;
-use crate::key::Key;
-use crate::step::Step;
-use crate::accidental::Accidental;
-use crate::alteration::Alteration;
+use crate::{Accidental, Alteration, Interval, Key, Step};
 
 /// Tonal pitch class
 ///
 /// Has variants for all pitch classes with double or single flats, natural,
-/// double or single sharps.
+/// double or single sharps. The numeric value of the enum corresponds to steps
+/// away from C on the ``line of fifths''. For instance, F is one fifth below C
+/// and has the value -1.
 ///
 /// Note that the "s" and "ss" suffixes mean sharp and double sharp. Should not
 /// be confused with the names of flat notes, which in some languages use the -s
@@ -19,7 +19,7 @@ use crate::alteration::Alteration;
 #[derive(Clone, Debug, PartialEq, FromPrimitive, ToPrimitive)]
 #[rustfmt::skip]
 pub enum Tpc {
-    Fbb = -1,
+    Fbb = -15,
          Cbb, Gbb, Dbb, Abb, Ebb, Bbb,
     Fb,  Cb,  Gb,  Db,  Ab,  Eb,  Bb,
     F,   C,   G,   D,   A,   E,   B,
@@ -27,23 +27,29 @@ pub enum Tpc {
     Fss, Css, Gss, Dss, Ass, Ess, Bss,
 }
 
-/// The highest Tpc
-pub const MAX: Tpc = Tpc::Bss;
-
-/// The lowest Tpc
-pub const MIN: Tpc = Tpc::Fbb;
-
 impl Tpc {
+    /// The sharpest valid Tpc: B double sharp
+    pub const MAX: Tpc = Tpc::Bss;
+
+    /// The flattest valid Tpc: F double flat
+    pub const MIN: Tpc = Tpc::Fbb;
+
+    /// Number of fifths to add to be a semitone higher
+    const DELTA_SEMITONE: isize = 7;
+
+    /// Number of fifths to the next enharmonic spelling
+    const DELTA_ENHARMONIC: isize = 12;
+
     /// The basic step of the Tpc, or where it is placed on the staff
     pub fn step(&self) -> Step {
-        match self {
-            Tpc::Bbb | Tpc::Bb | Tpc::B | Tpc::Bs | Tpc::Bss => Step::B,
-            Tpc::Fbb | Tpc::Fb | Tpc::F | Tpc::Fs | Tpc::Fss => Step::F,
-            Tpc::Cbb | Tpc::Cb | Tpc::C | Tpc::Cs | Tpc::Css => Step::C,
-            Tpc::Gbb | Tpc::Gb | Tpc::G | Tpc::Gs | Tpc::Gss => Step::G,
-            Tpc::Dbb | Tpc::Db | Tpc::D | Tpc::Ds | Tpc::Dss => Step::D,
-            Tpc::Abb | Tpc::Ab | Tpc::A | Tpc::As | Tpc::Ass => Step::A,
-            Tpc::Ebb | Tpc::Eb | Tpc::E | Tpc::Es | Tpc::Ess => Step::E,
+        match (self.clone() as i8).rem_euclid(7) {
+            0 => Step::C,
+            1 => Step::G,
+            2 => Step::D,
+            3 => Step::A,
+            4 => Step::E,
+            5 => Step::B,
+            _ => Step::F,
         }
     }
 
@@ -63,19 +69,20 @@ impl Tpc {
     pub fn alteration(&self, key: Key) -> Alteration {
         let tpc = self.clone() as isize;
         let key = key.clone() as isize;
-        (tpc - key - MIN as isize + key::MAX as isize) / DELTA_SEMITONE - 3
+        (tpc - key - Self::MIN as isize + Key::MAX as isize) / Self::DELTA_SEMITONE - 3
     }
 
     /// The accidental for the Tpc
     ///
     /// Private because you rarely want an accidental without the context of a key.
     fn accidental(&self) -> Accidental {
-        match (self.clone() as isize + 1) / 7 {
-            0 => Accidental::DblFlat,
-            1 => Accidental::Flat,
-            2 => Accidental::Natural,
-            3 => Accidental::Sharp,
-            _ => Accidental::DblSharp,
+        match (self.clone() as i8 + 1).div_euclid(7) {
+            -2 => Accidental::DblFlat,
+            -1 => Accidental::Flat,
+            0 => Accidental::Natural,
+            1 => Accidental::Sharp,
+            2 => Accidental::DblSharp,
+            _ => unreachable!("Tpc out of range"),
         }
     }
 
@@ -84,16 +91,16 @@ impl Tpc {
     /// If no key is given, default to C major with no fixed accidentals
     ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// # use tonality::{Accidental, Key, Step, Tpc};
     /// let tpc = Tpc::C;
     /// let key: Option<Key> = None;
     /// assert_eq!((Step::C, None), tpc.altered_step(key));
-    /// 
+    ///
     /// let key: Option<Key> = Some(Key::A);
     /// assert_eq!((Step::C, Some(Accidental::Natural)), tpc.altered_step(key));
-    /// 
+    ///
     /// let tpc = Tpc::Fss;
     /// let key: Option<Key> = None;
     /// assert_eq!((Step::F, Some(Accidental::DblSharp)), tpc.altered_step(key));
@@ -101,7 +108,7 @@ impl Tpc {
     pub fn altered_step(&self, key: Option<Key>) -> (Step, Option<Accidental>) {
         let key = key.unwrap_or_default();
         let step = self.step();
-        if step.with_key(&key) == self {
+        if &step.with_key(&key) == self {
             (step, None)
         } else {
             (step, Some(self.accidental()))
@@ -113,21 +120,28 @@ impl Tpc {
     /// Returns None if the alteration would be sharper than double sharp or
     /// flatter than double flat
     pub fn alter(&self, by: Alteration) -> Option<Tpc> {
-        let new = self.clone() as isize + by * DELTA_SEMITONE;
+        let new = self.clone() as isize + by * Self::DELTA_SEMITONE;
         num_traits::FromPrimitive::from_isize(new)
     }
 }
 
-/// the delta in tpc value to go 1 semitone up or down
-const DELTA_SEMITONE: isize = 7;
-/// the delta in tpc value to reach the next (or prev) enharmonic spelling
-const DELTA_ENHARMONIC: isize = 12;
 
-#[derive(Clone, Debug, PartialEq)]
-enum Prefer {
-    Flats,
-    Nearest,
-    Sharps,
+impl<Rhs> std::ops::Add<Rhs> for Tpc where Rhs: Borrow<Interval> {
+    type Output = Option<Tpc>;
+
+    fn add(self, rhs: Rhs) -> Self::Output {
+        let value = self as i8 + rhs.borrow().clone() as i8;
+        FromPrimitive::from_i8(value)
+    }
+}
+
+impl<Rhs> std::ops::Sub<Rhs> for Tpc where Rhs: Borrow<Interval> {
+    type Output = Option<Tpc>;
+
+    fn sub(self, rhs: Rhs) -> Self::Output {
+        let value = self as i8 - rhs.borrow().clone() as i8;
+        FromPrimitive::from_i8(value)
+    }
 }
 
 #[cfg(test)]
@@ -138,7 +152,7 @@ mod tests {
     fn test_enharmonic_transpose() {
         use num_traits::ToPrimitive;
         let c = Tpc::C;
-        let enharmonic = c.to_isize().unwrap() + DELTA_ENHARMONIC;
+        let enharmonic = c.to_isize().unwrap() + Tpc::DELTA_ENHARMONIC;
         let enharmonic: Tpc = num_traits::FromPrimitive::from_isize(enharmonic).unwrap();
         assert_eq!(enharmonic, Tpc::Bs);
     }
@@ -147,16 +161,12 @@ mod tests {
     fn test_to_alter_with_key() {
         // A in C Maj: No alteration
         assert_eq!(0, Tpc::A.alteration(Key::C));
-
         // F# in C Maj: One semitone higher
         assert_eq!(1, Tpc::Fs.alteration(Key::C));
-
         // C in D Maj: One semitone lower
         assert_eq!(-1, Tpc::C.alteration(Key::D));
-
         // Fbb in C# Maj: Three semitones lower
         assert_eq!(-3, Tpc::Fbb.alteration(Key::Cs));
-
         // Eb in Bb Maj: No alteration
         assert_eq!(0, Tpc::Eb.alteration(Key::Bb));
     }
@@ -188,5 +198,17 @@ mod tests {
                 property_alter_keeps_step(&tpc, alter)
             }
         }
+    }
+
+    #[test]
+    fn add_interval() {
+        assert_eq!(Some(Tpc::E), Tpc::C + Interval::Maj3);
+        assert_eq!(Some(Tpc::C), Tpc::Fs + Interval::Dim5);
+
+        // A dim 5th from Fbb would be Cbbb - out of range
+        assert_eq!(None, Tpc::Fbb + Interval::Dim5);
+
+        // A major 3rd above D## would be F### - out of range
+        assert_eq!(None, Tpc::Dss + Interval::Maj3);
     }
 }
