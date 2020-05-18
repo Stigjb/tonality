@@ -1,17 +1,38 @@
 #![warn(clippy::pedantic, missing_docs, missing_doc_code_examples)]
 #![recursion_limit = "256"]
 
-//! Types and operations that are useful for dealing with tonal pitch classes, which is
-//! useful for music theory or musical notation. All types are based on the "line of fifths".
-//! No octaves.
-//!
-//! This library will help you answer questions like "Which accidental, if any,
-//! is used for writing the pitch A flat in the key of B flat major?"
+//! A library for handling tonal pitch classes, keys, intervals, accidentals and
+//! alterations. A tonal pitch class (`Tpc`) does not distinguish pitches in
+//! different octaves, but it does distinguish different enharmonic spellings of
+//! notes, intervals, and keys. This is done based on the "line of fifths"
+//! concept.
+//! 
+//! Distinguishing enharmonic spellings is desirable in several applications:
+//! 
+//! - In musical notation, where using an incorrect enharmonic spelling harms
+//!   legibility
+//! - When using other tunings than twelve tone equal temperament (12TET), in
+//!   which case notes normally considered enharmonic should actually be played at
+//!   different pitches.
+//! 
+//! Another important type is the `Step`, which represents the fact that G sharp
+//! and G flat are written on the same line of the staff. A `Step` combined with
+//! a `Key` or `Accidental` gives a `Tpc`.
+//! 
+//! Using the `Step` type also helps you handle octaves. If you want the F above
+//! A flat, for instance, you would compare their `Step`s, see that F has a lower
+//! step than A flat, and therefore should be raised an octave.
+//! 
+//! Arithmetic operations with `Tpc`s and `Interval`s return optional values,
+//! because they may result in alterations beyond the domain of the library.
+//! Triple sharps/flats or double diminished/augmented intervals are not
+//! supported.
 //!
 //! ## Alteration versus accidental
 //!
 //! Though they are similar, these two types serve different purposes. An
-//! Alteration can only apply to a Tpc, while an accidental can only apply to a
+//! `Alteration` is a relative change that applies to a `Tpc`.
+//! An accidental is an absolute change that can only apply to a
 //! Step - turning it into a Tpc.
 //!
 //! # Example
