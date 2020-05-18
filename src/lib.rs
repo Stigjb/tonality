@@ -1,5 +1,4 @@
 #![warn(clippy::pedantic, missing_docs, missing_doc_code_examples)]
-#![recursion_limit = "256"]
 
 //! A library for handling tonal pitch classes, keys, intervals, accidentals and
 //! alterations. A tonal pitch class (`Tpc`) does not distinguish pitches in
