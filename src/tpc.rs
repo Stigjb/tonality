@@ -8,7 +8,7 @@ use crate::{Accidental, Alteration, Interval, Key, Step};
 ///
 /// Has variants for all pitch classes with double or single flats, natural,
 /// double or single sharps. The numeric value of the enum corresponds to steps
-/// away from C on the ``line of fifths''. For instance, F is one fifth below C
+/// away from C on the "line of fifths". For instance, F is one fifth below C
 /// and has the value -1.
 ///
 /// Note that the "s" and "ss" suffixes mean sharp and double sharp. Should not
@@ -17,6 +17,7 @@ use crate::{Accidental, Alteration, Interval, Key, Step};
 #[derive(Clone, Copy, PartialOrd, Ord, Eq, Debug, PartialEq, FromPrimitive)]
 #[must_use]
 #[rustfmt::skip]
+#[allow(missing_docs)]
 pub enum Tpc {
     Fbb = -15,
          Cbb, Gbb, Dbb, Abb, Ebb, Bbb,
@@ -40,6 +41,12 @@ impl Tpc {
     const DELTA_ENHARMONIC: i8 = 12;
 
     /// The basic step of the Tpc, or where it is placed on the staff
+    /// ```
+    /// # use tonality::{Tpc, Step};
+    /// assert_eq!(Step::C, Tpc::C.step());
+    /// assert_eq!(Step::C, Tpc::Cs.step());
+    /// assert_eq!(Tpc::Gb.step(), Tpc::Gs.step());
+    /// ```
     pub fn step(self) -> Step {
         match (self as i8).rem_euclid(7) {
             0 => Step::C,
@@ -119,10 +126,33 @@ impl Tpc {
     ///
     /// Returns None if the alteration would be sharper than double sharp or
     /// flatter than double flat
+    /// ```
+    /// # use tonality::Tpc;
+    /// assert_eq!(Some(Tpc::Gs), Tpc::G.alter(1));
+    /// assert_eq!(None, Tpc::Bbb.alter(-1));
+    /// assert_eq!(Some(Tpc::Abb), Tpc::As.alter(-3));
+    /// ```
     #[must_use]
     pub fn alter(self, by: Alteration) -> Option<Tpc> {
         let new = self as i8 + by * Self::DELTA_SEMITONE;
         num_traits::FromPrimitive::from_i8(new)
+    }
+
+    /// Whether the two tpcs are enharmonic, i.e. represent the same pitch
+    /// class in twelve tone equal temperament.
+    ///
+    /// This relation applies even to tpcs which doesn't have a valid interval
+    /// between them, such as Abb and Fss.
+    /// ```
+    /// # use tonality::Tpc;
+    /// assert!(Tpc::Gs.enharmonic(Tpc::Ab));
+    /// assert!(Tpc::Fs.enharmonic(Tpc::Ess));
+    /// assert!(Tpc::Abb.enharmonic(Tpc::Fss));
+    /// assert!(!Tpc::Fs.enharmonic(Tpc::F));
+    /// ```
+    #[must_use]
+    pub fn enharmonic(self, other: Tpc) -> bool {
+        (self as i8 - other as i8) % Self::DELTA_ENHARMONIC == 0
     }
 }
 
@@ -141,6 +171,14 @@ impl std::ops::Sub<Interval> for Tpc {
     fn sub(self, rhs: Interval) -> Self::Output {
         let value = self as i8 - rhs as i8;
         FromPrimitive::from_i8(value)
+    }
+}
+
+impl std::ops::Sub<Tpc> for Tpc {
+    type Output = Option<Interval>;
+
+    fn sub(self, rhs: Tpc) -> Self::Output {
+        FromPrimitive::from_i8(rhs as i8 - self as i8)
     }
 }
 
@@ -182,21 +220,6 @@ mod tests {
         assert_eq!(Accidental::Sharp, Tpc::Es.accidental());
         assert_eq!(Accidental::DblSharp, Tpc::Fss.accidental());
         assert_eq!(Accidental::DblSharp, Tpc::Bss.accidental());
-    }
-
-    fn property_alter_keeps_step(tpc: Tpc, alter: Alteration) {
-        if let Some(altered) = tpc.alter(alter) {
-            assert_eq!(tpc.step(), altered.step())
-        }
-    }
-
-    #[test]
-    fn test_alter_property() {
-        for tpc in vec![Tpc::C, Tpc::Ab, Tpc::E, Tpc::Fss, Tpc::Gb] {
-            for alter in vec![0, 1, 2, -3, -2] {
-                property_alter_keeps_step(tpc, alter)
-            }
-        }
     }
 
     #[test]

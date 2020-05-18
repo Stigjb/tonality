@@ -1,8 +1,9 @@
-#![warn(clippy::pedantic)]
-#![allow(dead_code)]
+#![warn(clippy::pedantic, missing_docs, missing_doc_code_examples)]
+#![recursion_limit = "256"]
 
 //! Types and operations that are useful for dealing with tonal pitch classes, which is
-//! useful for music theory or musical notation.
+//! useful for music theory or musical notation. All types are based on the "line of fifths".
+//! No octaves.
 //!
 //! This library will help you answer questions like "Which accidental, if any,
 //! is used for writing the pitch A flat in the key of B flat major?"

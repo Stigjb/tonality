@@ -5,9 +5,10 @@ use num_traits::FromPrimitive;
 use crate::Step;
 use crate::Tpc;
 
-/// Key signatures. Named after their major key.
+/// Keys represent a number of fixed sharps or flats.
 #[derive(Clone, Copy, Debug, PartialEq, FromPrimitive)]
 #[must_use]
+#[allow(missing_docs)]
 pub enum Key {
     Cb = -7,
     Gb,
@@ -46,7 +47,7 @@ impl Key {
     pub const DELTA_ENHARMONIC: isize = 12;
 
     /// The root of the key's major scale
-    fn root_step(self) -> Step {
+    pub fn root_step(self) -> Step {
         match (self as i8).rem_euclid(7) {
             0 => Step::C,
             1 => Step::G,
@@ -59,6 +60,10 @@ impl Key {
     }
 
     /// The root of this key's major scale
+    /// ```
+    /// # use tonality::{Key, Tpc};
+    /// assert_eq!(Tpc::G, Key::G.root());
+    /// ```
     pub fn root(self) -> Tpc {
         FromPrimitive::from_i8(self as i8).unwrap()
     }

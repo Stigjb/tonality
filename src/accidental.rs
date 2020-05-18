@@ -1,8 +1,9 @@
 //! Accidentals
-use num_derive::{FromPrimitive, ToPrimitive};
+use num_derive::FromPrimitive;
 
 /// Double or single flat, natural, double or single sharp
-#[derive(Clone, Debug, PartialEq, FromPrimitive, ToPrimitive)]
+#[derive(Clone, Copy, Debug, PartialEq, FromPrimitive)]
+#[allow(missing_docs)]
 pub enum Accidental {
     DblFlat = -2,
     Flat,

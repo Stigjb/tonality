@@ -1,4 +1,4 @@
-//! A step of a diatonic scale
+//! A position on a music staff
 use std::convert::TryFrom;
 use std::ops::{Add, Sub};
 
@@ -8,8 +8,11 @@ use crate::Accidental;
 use crate::Key;
 use crate::Tpc;
 
+/// A `Step` corresponds to a position on a music staff, and relates to
+/// a `Tpc` by stripping the latter of any alterations.
 #[derive(Clone, Copy, Debug, PartialEq, FromPrimitive)]
 #[must_use]
+#[allow(missing_docs)]
 pub enum Step {
     C = 0,
     D,
@@ -35,7 +38,16 @@ impl From<Tpc> for Step {
 }
 
 impl Step {
+    /// C is the lowest step
+    pub const MIN: Step = Step::C;
+    /// B is the highest step
+    pub const MAX: Step = Step::B;
+
     /// The tonal pitch class resulting from applying an accidental to the step
+    /// ```
+    /// # use tonality::{Accidental, Step, Tpc};
+    /// assert_eq!(Tpc::Ab, Step::A.with_accidental(Accidental::Flat));
+    /// ```
     pub fn with_accidental(self, alter: Accidental) -> Tpc {
         #[rustfmt::skip]
         const SPELLINGS: [Tpc; 35] = [
@@ -54,6 +66,10 @@ impl Step {
     }
 
     /// The tonal pitch class of the step in the given key
+    /// ```
+    /// # use tonality::{Key, Step, Tpc};
+    /// assert_eq!(Tpc::Ab, Step::A.with_key(Key::Eb));
+    /// ```
     pub fn with_key(self, key: Key) -> Tpc {
         #[rustfmt::skip]
         const BY_STEP_AND_KEY: [Tpc; 7 * Key::NUM_OF as usize] = [
