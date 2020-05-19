@@ -10,7 +10,7 @@ use crate::Tpc;
 
 /// A `Step` corresponds to a position on a music staff, and relates to
 /// a `Tpc` by stripping the latter of any alterations.
-#[derive(Clone, Copy, Debug, PartialEq, FromPrimitive)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord, FromPrimitive)]
 #[must_use]
 #[allow(missing_docs)]
 pub enum Step {
